@@ -1,4 +1,4 @@
-const supabase = require('../models/supabase'); // Assuming you have a Supabase client set up in models/supabase.js
+const supabase = require('../models/supabase'); 
 
 // GET /clients
 exports.getAllClients = async (req, res) => {
@@ -12,6 +12,22 @@ exports.getAllClients = async (req, res) => {
     } catch (error) {
         console.error('Error fetching clients:', error.message);
         res.status(500).json({ error: 'Internal Server Error, failed to fetch clients' });
+    }
+};
+
+// GET /clients/count
+exports.getClientsCount = async (req, res) => {
+    try {
+        const { count, error } = await supabase
+            .from('clients')
+            .select('*', { count: 'exact', head: true });
+
+        if (error) throw error;
+
+        res.status(200).json({ totalCount: count });
+    } catch (error) {
+        console.error('Error fetching clients count:', error.message, error);
+        res.status(500).json({ error: 'Internal Server Error, failed to fetch clients count' });
     }
 };
 

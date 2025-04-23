@@ -15,6 +15,35 @@ exports.getAllProjects = async (req, res) => {
     }
 };
 
+// GET /projects/recent
+exports.getRecentProjects = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('projects')
+            .select(`
+                id,
+                name,
+                status,
+                due_date,
+                created_at,
+                client:clients (
+                    id,
+                    name
+                )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(3);
+
+        if (error) throw error;
+
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Error fetching recent projects with clients:', error.message);
+        res.status(500).json({ error: 'Internal Server Error, failed to fetch recent projects' });
+    }
+};
+
+
 // GET /projects/:id
 exports.getProjectById = async (req, res) => {
     const { id } = req.params;
@@ -75,8 +104,9 @@ exports.createProject = async (req, res) => {
 exports.updateProject = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
+    const { client_id, name, description, status, start_date, due_date } = updates;
 
-    if (!name || !description || !client_id) {
+    if (!name || !description || !client_id || !status || !start_date || !due_date) {
         return res.status(400).json({ error: 'Name, description, and client_id are required' });
     }
 
@@ -112,5 +142,21 @@ exports.deleteProject = async (req, res) => {
     } catch (error) {
         console.error('Error deleting project:', error.message);
         res.status(500).json({ error: 'Internal Server Error, failed to delete project' });
+    }
+};
+
+// GET /projects/count  
+exports.getProjectsCount = async (req, res) => {
+    try {
+        const { count, error } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true });
+
+        if (error) throw error;
+
+        res.status(200).json({ totalCount: count });
+    } catch (error) {
+        console.error('Error fetching projects count:', error.message);
+        res.status(500).json({ error: 'Internal Server Error, failed to fetch projects count' });
     }
 };

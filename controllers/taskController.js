@@ -15,6 +15,31 @@ exports.getAllTasks = async (req, res) => {
     }
 };
 
+// GET /tasks/overview  
+exports.getTasksOverview = async (req, res) => {
+    try {
+        // Total count
+        const { count: total, error: totalError } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true });
+    
+        if (totalError) throw totalError;
+    
+        // In-progress count
+        const { count: inProgress, error: progressError } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'in_progress');
+    
+        if (progressError) throw progressError;
+    
+        res.status(200).json({ total, inProgress });
+      } catch (error) {
+        console.error('Error fetching tasks overview:', error.message);
+        res.status(500).json({ error: 'Failed to fetch task stats' });
+      }
+};
+
 // GET /tasks/:id
 exports.getTaskById = async (req, res) => {
     const { id } = req.params;
@@ -76,8 +101,8 @@ exports.updateTask = async (req, res) => {
     const { id } = req.params;
     const {project_id, title, description, status, priority, deadline} = req.body;
 
-    if (!title || !description || !project_id) {
-        return res.status(400).json({ error: 'Title, description, and project_id are required' });
+    if (!title || !description || !project_id || !status || !priority || !deadline) {
+        return res.status(400).json({ error: 'Name, description, project_id, status, priority, and deadline are required' });
     }
 
     try {
@@ -112,5 +137,19 @@ exports.deleteTask = async (req, res) => {
     } catch (error) {
         console.error('Error deleting task:', error.message);
         res.status(500).json({ error: 'Internal Server Error, failed to delete task' });
+    }
+};
+
+// GET /tasks/count
+exports.getTasksCount = async (req, res) => {
+    try {
+        const { count, error } = await supabase
+            .from('tasks')
+            .select('*', { count: 'exact' });
+        if (error) throw error;
+        res.status(200).json({ totalCount: count });
+    } catch (error) {
+        console.error('Error fetching tasks count:', error.message);
+        res.status(500).json({ error: 'Internal Server Error, failed to fetch tasks count' });
     }
 };
